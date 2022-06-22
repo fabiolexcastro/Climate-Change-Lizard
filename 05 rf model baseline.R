@@ -88,6 +88,7 @@ rslt <- purrr::map(.x = 1:15, .f = function(i){
   model <- pa ~ bio_1 + bio_3 + bio_4 + bio_9 + bio_12 + bio_15 + srtm
   rf1 <- randomForest(model, data = envtrain)
   
+  saveRDS(rf1, file = glue('./rf/run_1/model_{i}.rds'))
   erf1 <- evaluate(testpres, testbackg, rf1)
   pr <- predict(stck, rf1)
   
@@ -104,10 +105,21 @@ rslt_stck <- purrr::map(.x = 1:length(rslt), .f = function(i) rslt[[i]][[1]])
 rslt_stck <- raster::stack(rslt_stck)
 rslt
 
+writeRaster(rslt_stck, './rf/run_1/stack_models.tif', overwrite = T)
+
 # Get the average 
 avrg <- mean(rslt_stck)
 vles <- raster::extract(avrg, pnts[,c(3, 2)])
-quantile(vles, seq(0, 1, 0.05))
 
+writeRaster(x = avrg, filename = './rf/run_1/mean_models.tif', overwrite = TRUE)
 
+# Get the threshold
+qntl <- quantile(vles, seq(0, 1, 0.05))
+thrs <- as.numeric(qntl[2])
+
+# To binary 
+avrg[which(avrg[] < thrs)] <- 0
+avrg[which(avrg[] >= thrs)] <- 1
+
+writeRaster(x = avrg, filename = './rf/run_1/binary_model.tif', overwrite = TRUE)
 
