@@ -20,6 +20,18 @@ nble <- chle[chle$NAME_1 %in% 'Ñuble',]
 wrld <- ne_countries(scale = 50, type = 'countries', returnclass = 'sf')
 sout <- filter(wrld, subregion == 'South America')
 
+zone <- as(zone, 'Spatial')
+zone$gid <- 1:nrow(zone)
+spp <- spplot(zone, 'gid')
+points(pnts$lon, pnts$lat, pch = 16, col = 'red')
+
+coordinates(pnts) <-  ~ lon + lat
+
+png(filename = 'png/maps/spplot_points.png', units = 'in', width = 5, height = 8, res = 300)
+spplot(zone, 'gid', sp.layout = list('sp.points', pnts, pch = 16, col = 'white', cex = 0.3))
+dev.off()
+spp + layer(panel.points(x, y, col="green", pch=19), data=meuse)
+
 # Get the names of each zone
 lbls <- zone %>% 
   st_centroid %>% 
@@ -61,9 +73,9 @@ zne <- zone %>% as(., 'Spatial') %>% raster::crop(c(terra::ext(zone)[1:2], -37.5
 zne <- st_as_sfc(st_bbox(zne))
 
 gglb <- ggplot() + 
-  geom_sf(data = st_as_sf(chle), fill = NA, col = 'grey40') + 
+  geom_sf(data = st_as_sf(chle), fill = NA, col = 'grey40', lwd = 0.15) + 
   geom_sf(data = zne, fill = NA, col = 'red', size = 0.5) + 
-  geom_sf(data = sout, fill = NA, col = 'grey30', lwd = 0.4) +
+  geom_sf(data = sout, fill = NA, col = 'grey30', lwd = 0.05) +
   coord_sf(xlim = c(-80, -67), ylim = c(-50, -20)) +
   theme_bw() +
   theme(axis.text.y = element_blank(), 
@@ -79,8 +91,11 @@ gglb <- ggplot() +
         panel.border = element_rect( color = "grey20", fill = NA, size = 0.4)) 
 
 gall <- gmap +
-  annotation_custom(ggplotGrob(gglb), xmin = -71, xmax = -70.1, ymin = -37.4, ymax = -36.6)
+  annotation_custom(ggplotGrob(gglb), xmin = -71, xmax = -70.1, ymin = -37.4, ymax = -36.6) +
+  annotate(geom = "text", x = -70.7, y = -36.55, hjust = 0, vjust = 1, 
+           label = 'Macrolocalización',
+           size = 1.2, color = "grey30")
 
-ggsave(plot = gmap, 
+ggsave(plot = gall, 
        filename = './png/maps/zone_points_v2.png', 
        units = 'in', width = 7, height = 3, dpi = 300)
